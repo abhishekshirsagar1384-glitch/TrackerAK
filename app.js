@@ -1,451 +1,442 @@
-const STORAGE_KEY = "my-tracker-v1";
-let state = loadState();
-let deferredInstallPrompt = null;
-
-const $ = (id) => document.getElementById(id);
-
-const ui = {
-  trackerList: $("trackerList"),
-  emptyState: $("emptyState"),
-  modalBackdrop: $("modalBackdrop"),
-  trackerForm: $("trackerForm"),
-  nameInput: $("nameInput"),
-  typeInput: $("typeInput"),
-  targetInput: $("targetInput"),
-  targetWrap: $("targetWrap"),
-  deadlineWrap: $("deadlineWrap"),
-  deadlineInput: $("deadlineInput"),
-  categoryInput: $("categoryInput"),
-  colorInput: $("colorInput"),
-  todayLabel: $("todayLabel"),
-  todayDone: $("todayDone"),
-  activeCount: $("activeCount"),
-  bestStreak: $("bestStreak"),
-  toast: $("toast"),
-  installBtn: $("installBtn"),
+// 1. Initial Data Structure
+const defaultData = {
+    streak: 0,
+    lastLogDate: null,
+    totalMinutes: 0,
+    dailyNotes: "",
+    arcEndDate: "2026-03-20", // Default end date
+    expanded: {},
+    history: [],
+    topics: [
+        {
+            id: 1,
+            title: "PortSwigger Academy",
+            subtasks: [
+                { id: '1-1', title: 'SQL Injection (18 labs)', link: 'https://portswigger.net/web-security/sql-injection', completed: false },
+                { id: '1-2', title: 'Authentication (14 labs)', link: 'https://portswigger.net/web-security/authentication', completed: false },
+                { id: '1-3', title: 'Path Traversal (6 labs)', link: 'https://portswigger.net/web-security/file-path-traversal', completed: false },
+                { id: '1-4', title: 'Command Injection (5 labs)', link: 'https://portswigger.net/web-security/os-command-injection', completed: false },
+                { id: '1-5', title: 'Business Logic Vulnerabilities (11 labs)', link: 'https://portswigger.net/web-security/logic-flaws', completed: false },
+                { id: '1-6', title: 'Information Disclosure (5 labs)', link: 'https://portswigger.net/web-security/information-disclosure', completed: false },
+                { id: '1-7', title: 'Access Control (13 labs)', link: 'https://portswigger.net/web-security/access-control', completed: false },
+                { id: '1-8', title: 'File Upload Vulnerabilities (Varies)', link: 'https://portswigger.net/web-security/file-upload', completed: false },
+                { id: '1-9', title: 'Server-Side Request Forgery / SSRF (Varies)', link: 'https://portswigger.net/web-security/ssrf', completed: false },
+                { id: '1-10', title: 'XXE Injection (9 labs)', link: 'https://portswigger.net/web-security/xxe', completed: false },
+                { id: '1-11', title: 'NoSQL Injection (4 labs)', link: 'https://portswigger.net/web-security/nosql-injection', completed: false },
+                { id: '1-12', title: 'API Testing (5 labs)', link: 'https://portswigger.net/web-security/api-testing', completed: false },
+                { id: '1-13', title: 'Web Cache Deception (5 labs)', link: 'https://portswigger.net/web-security/web-cache-deception', completed: false },
+                { id: '1-14', title: 'Cross-Site Scripting / XSS (30 labs)', link: 'https://portswigger.net/web-security/cross-site-scripting', completed: false },
+                { id: '1-15', title: 'Cross-Site Request Forgery / CSRF (12 labs)', link: 'https://portswigger.net/web-security/csrf', completed: false },
+                { id: '1-16', title: 'Cross-Origin Resource Sharing / CORS (3 labs)', link: 'https://portswigger.net/web-security/cors', completed: false },
+                { id: '1-17', title: 'Clickjacking (5 labs)', link: 'https://portswigger.net/web-security/clickjacking', completed: false },
+                { id: '1-18', title: 'DOM-Based Vulnerabilities (7 labs)', link: 'https://portswigger.net/web-security/dom-based', completed: false },
+                { id: '1-19', title: 'WebSockets (3 labs)', link: 'https://portswigger.net/web-security/websockets', completed: false },
+                { id: '1-20', title: 'Race Conditions (Varies)', link: 'https://portswigger.net/web-security/race-conditions', completed: false },
+                { id: '1-21', title: 'GraphQL API Vulnerabilities (Varies)', link: 'https://portswigger.net/web-security/graphql', completed: false },
+                { id: '1-22', title: 'Server-Side Template Injection (7 labs)', link: 'https://portswigger.net/web-security/server-side-template-injection', completed: false },
+                { id: '1-23', title: 'Web Cache Poisoning (13 labs)', link: 'https://portswigger.net/web-security/web-cache-poisoning', completed: false },
+                { id: '1-24', title: 'HTTP Host Header Attacks (7 labs)', link: 'https://portswigger.net/web-security/host-header', completed: false },
+                { id: '1-25', title: 'HTTP Request Smuggling (22 labs)', link: 'https://portswigger.net/web-security/request-smuggling', completed: false },
+                { id: '1-26', title: 'OAuth Authentication (6 labs)', link: 'https://portswigger.net/web-security/oauth', completed: false },
+                { id: '1-27', title: 'JWT Attacks (8 labs)', link: 'https://portswigger.net/web-security/jwt', completed: false },
+                { id: '1-28', title: 'Prototype Pollution (10 labs)', link: 'https://portswigger.net/web-security/prototype-pollution', completed: false },
+                { id: '1-29', title: 'Essential Skills (2 labs)', link: 'https://portswigger.net/web-security/essential-skills', completed: false }
+            ]
+        },
+        {
+            id: 2,
+            title: "CompTIA Security+",
+            subtasks: [
+                { id: '2-1', title: '1.0 General Security Concepts (12%) - Controls, Cryptography, PKI', completed: false },
+                { id: '2-2', title: '2.0 Threats, Vulnerabilities, & Mitigations (22%) - IAM, Vulnerability Mgmt', completed: false },
+                { id: '2-3', title: '3.0 Security Architecture (18%) - Cloud, Network, Endpoint, AppSec', completed: false },
+                { id: '2-4', title: '4.0 Security Operations (28%) - Incident Response, Forensics, Monitoring', completed: false },
+                { id: '2-5', title: '5.0 Security Program Management (20%) - Governance, Risk, Compliance', completed: false },
+                { id: '2-6', title: 'CompTIA Security+ Practice Exams & PBQs', completed: false }
+            ]
+        },
+        {
+            id: 3,
+            title: "Agentic Security",
+            subtasks: [
+                { id: '3-1', title: 'Core Concepts & Frameworks (OWASP Agentic Top 10, ASDL)', completed: false },
+                { id: '3-2', title: 'Threat Modeling & Risk (MAESTRO, Goal Hijacking, Prompt Injection)', completed: false },
+                { id: '3-3', title: 'Identity, Access & Trust (Entra Agent ID, Zero Trust for AI)', completed: false },
+                { id: '3-4', title: 'Runtime & Execution Security (Sandboxing, OATS, Aether-9)', completed: false },
+                { id: '3-5', title: 'Governance, Compliance & Standards (MCP Security, Citadel)', completed: false },
+                { id: '3-6', title: 'Supply Chain & Ecosystem Security', completed: false },
+                { id: '3-7', title: 'Red Teaming & Testing (AI-VSS, Agentic SecOps)', completed: false },
+                { id: '3-8', title: 'Enterprise Frameworks (AEGIS, Nvidia Open Agent Safety)', completed: false }
+            ]
+        },
+        {
+            id: 4,
+            title: "OWASP Top 10",
+            subtasks: [
+                { id: '4-1', title: 'A01: Broken Access Control', completed: false },
+                { id: '4-2', title: 'A02: Cryptographic Failures', completed: false },
+                { id: '4-3', title: 'A03: Injection', completed: false },
+                { id: '4-4', title: 'A04: Insecure Design', completed: false },
+                { id: '4-5', title: 'A05: Security Misconfiguration', completed: false },
+                { id: '4-6', title: 'A06: Vulnerable and Outdated Components', completed: false },
+                { id: '4-7', title: 'A07: Identification and Authentication Failures', completed: false },
+                { id: '4-8', title: 'A08: Software and Data Integrity Failures', completed: false },
+                { id: '4-9', title: 'A09: Security Logging and Monitoring Failures', completed: false },
+                { id: '4-10', title: 'A10: Server-Side Request Forgery (SSRF)', completed: false }
+            ]
+        },
+        {
+            id: 5,
+            title: "Application Security",
+            subtasks: [
+                { id: '5-1', title: 'Secure SDLC, Threat Modeling, Architecture & Risk Assessment', completed: false },
+                { id: '5-2', title: 'Security Testing & Tools (SAST, DAST, IAST, SCA, RASP, Fuzzing)', completed: false },
+                { id: '5-3', title: 'Vulnerability Mgmt, Bug Bounty, Red/Blue/Purple Teaming', completed: false },
+                { id: '5-4', title: 'DevSecOps, CI/CD Security, Supply Chain, SBOM, Secrets Mgmt', completed: false },
+                { id: '5-5', title: 'Identity & Crypto (IAM, MFA, OAuth, JWT, TLS, PKI, Hashing)', completed: false },
+                { id: '5-6', title: 'Core Vulnerabilities (XSS, SQLi, CSRF, SSRF, Deserialization)', completed: false },
+                { id: '5-7', title: 'API, Microservices, Container, K8s, Serverless & Cloud Security', completed: false },
+                { id: '5-8', title: 'WAF, Rate Limiting, DDoS, Logging, SIEM, SOAR, Threat Hunting', completed: false },
+                { id: '5-9', title: 'Compliance & Standards (OWASP ASVS/SAMM, NIST SSDF, ISO 27001, SOC 2)', completed: false }
+            ]
+        },
+        {
+            id: 6,
+            title: "AI Security",
+            subtasks: [
+                { id: '6-1', title: 'Adversarial Machine Learning & Model Theft', completed: false },
+                { id: '6-2', title: 'Data Poisoning & Privacy in AI (Federated Learning)', completed: false },
+                { id: '6-3', title: 'AI Governance, Ethics & Compliance', completed: false }
+            ]
+        },
+        {
+            id: 7,
+            title: "Project: AI & Agentic AI",
+            subtasks: [
+                { id: '7-1', title: 'Define Scope & Architecture', completed: false },
+                { id: '7-2', title: 'Build a basic AI Agent (LangChain/AutoGen)', completed: false },
+                { id: '7-3', title: 'Add Authentication & AuthZ', completed: false },
+                { id: '7-4', title: 'Perform a Security Audit on your Agent', completed: false },
+                { id: '7-5', title: 'Deploy Project & Write Documentation', completed: false }
+            ]
+        }
+    ]
 };
 
-function loadState() {
-  try {
-    const raw = localStorage.getItem(STORAGE_KEY);
-    if (!raw) return { trackers: [] };
-    const parsed = JSON.parse(raw);
-    return parsed && Array.isArray(parsed.trackers) ? parsed : { trackers: [] };
-  } catch {
-    return { trackers: [] };
-  }
-}
+let appData = JSON.parse(JSON.stringify(defaultData));
 
-function saveState() {
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
-}
-
-function dateKey(date = new Date()) {
-  return new Intl.DateTimeFormat("en-CA", {
-    year: "numeric", month: "2-digit", day: "2-digit"
-  }).format(date);
-}
-
-function friendlyDate(date = new Date()) {
-  return new Intl.DateTimeFormat(undefined, {
-    weekday: "long", day: "numeric", month: "long", year: "numeric"
-  }).format(date);
-}
-
-function clamp(n, min, max) {
-  return Math.min(Math.max(n, min), max);
-}
-
-function todayProgress(t) {
-  const key = dateKey();
-  const entry = t.history?.[key] ?? defaultEntry(t);
-  if (t.type === "habit") return entry.done ? 1 : 0;
-  if (t.type === "count") return clamp(Number(entry.value || 0) / Math.max(1, t.target || 1), 0, 1);
-  if (t.type === "checklist") {
-    const items = entry.items || [];
-    return items.length ? items.filter(Boolean).length / items.length : 0;
-  }
-  if (t.type === "deadline") {
-    return entry.done ? 1 : 0;
-  }
-  return 0;
-}
-
-function defaultEntry(t) {
-  if (t.type === "habit" || t.type === "deadline") return { done: false };
-  if (t.type === "count") return { value: 0 };
-  if (t.type === "checklist") return { items: (t.items || []).map(() => false) };
-  return {};
-}
-
-function ensureTodayEntry(t) {
-  const key = dateKey();
-  if (!t.history) t.history = {};
-  if (!t.history[key]) t.history[key] = defaultEntry(t);
-  return t.history[key];
-}
-
-function trackerStreak(t) {
-  let streak = 0;
-  const d = new Date();
-  while (true) {
-    const key = dateKey(d);
-    const entry = t.history?.[key];
-    if (!entry) break;
-    const progress = progressFromEntry(t, entry);
-    if (progress < 1) break;
-    streak += 1;
-    d.setDate(d.getDate() - 1);
-  }
-  return streak;
-}
-
-function progressFromEntry(t, entry) {
-  if (t.type === "habit" || t.type === "deadline") return entry.done ? 1 : 0;
-  if (t.type === "count") return clamp(Number(entry.value || 0) / Math.max(1, t.target || 1), 0, 1);
-  if (t.type === "checklist") {
-    const items = entry.items || [];
-    return items.length ? items.filter(Boolean).length / items.length : 0;
-  }
-  return 0;
-}
-
-function bestStreak(t) {
-  let best = 0, current = 0;
-  const days = Object.keys(t.history || {}).sort();
-  if (!days.length) return 0;
-  let prev = null;
-  for (const key of days) {
-    const [y,m,d] = key.split("-").map(Number);
-    const currentDate = new Date(y, m - 1, d);
-    if (prev) {
-      const diff = Math.round((currentDate - prev) / 86400000);
-      if (diff === 1 && progressFromEntry(t, t.history[key]) >= 1) {
-        current += 1;
-      } else {
-        current = progressFromEntry(t, t.history[key]) >= 1 ? 1 : 0;
-      }
-    } else {
-      current = progressFromEntry(t, t.history[key]) >= 1 ? 1 : 0;
+// 2. Load & Save Data
+function loadData() {
+    const saved = localStorage.getItem('winterArcLiveTracker');
+    if (saved) {
+        appData = JSON.parse(saved);
+        if (!appData.expanded) appData.expanded = {};
+        if (!appData.history) appData.history = [];
+        if (appData.dailyNotes === undefined) appData.dailyNotes = "";
+        if (!appData.arcEndDate) appData.arcEndDate = "2026-03-20";
     }
-    best = Math.max(best, current);
-    prev = currentDate;
-  }
-  return best;
 }
 
-function render() {
-  ui.todayLabel.textContent = friendlyDate();
-  const active = state.trackers.filter(t => !t.archived);
-  ui.activeCount.textContent = active.length;
-
-  const overall = active.length
-    ? Math.round(active.reduce((sum,t) => sum + todayProgress(t), 0) / active.length * 100)
-    : 0;
-  ui.todayDone.textContent = `${overall}%`;
-  ui.bestStreak.textContent = active.reduce((best,t) => Math.max(best, bestStreak(t)), 0);
-
-  ui.trackerList.innerHTML = "";
-  ui.emptyState.classList.toggle("hidden", active.length > 0);
-
-  active.forEach(t => {
-    ensureTodayEntry(t);
-    ui.trackerList.appendChild(renderTrackerCard(t));
-  });
-
-  saveState();
+function saveData() {
+    localStorage.setItem('winterArcLiveTracker', JSON.stringify(appData));
 }
 
-function renderTrackerCard(t) {
-  const card = document.createElement("article");
-  card.className = "tracker-card";
+// 3. Core Rendering Logic
+function renderApp() {
+    renderStats();
+    renderTopics();
+}
 
-  const p = todayProgress(t);
-  const pct = Math.round(p * 100);
-  const entry = ensureTodayEntry(t);
-  const streak = trackerStreak(t);
+function renderStats() {
+    document.getElementById('streak-count').textContent = `🔥 ${appData.streak} Days`;
+    const hours = (appData.totalMinutes / 60).toFixed(1);
+    document.getElementById('total-time').textContent = `${hours} hrs`;
 
-  const metaParts = [];
-  if (t.category) metaParts.push(t.category);
-  if (t.type === "habit") metaParts.push("Daily");
-  if (t.type === "count") metaParts.push(`Target ${t.target}`);
-  if (t.type === "deadline" && t.deadline) metaParts.push(`Due ${formatShortDate(t.deadline)}`);
-  if (streak) metaParts.push(`${streak} day streak`);
+    // Dynamic countdown
+    const endDate = new Date(appData.arcEndDate).getTime();
+    const today = new Date().getTime();
+    const daysLeft = Math.max(0, Math.ceil((endDate - today) / (1000 * 60 * 60 * 24)));
+    const daysLeftEl = document.getElementById('days-left');
+    if (daysLeftEl) daysLeftEl.textContent = `${daysLeft} Days`;
 
-  const top = document.createElement("div");
-  top.className = "tracker-top";
+    let totalTasks = 0;
+    let completedTasks = 0;
 
-  const titleRow = document.createElement("div");
-  titleRow.className = "tracker-title-row";
-
-  const dot = document.createElement("span");
-  dot.className = `dot color-${t.color || "violet"}`;
-
-  const titleWrap = document.createElement("div");
-  const h3 = document.createElement("h3");
-  h3.textContent = t.name;
-  const meta = document.createElement("p");
-  meta.className = "meta";
-  meta.textContent = metaParts.join(" • ") || t.type;
-  titleWrap.append(h3, meta);
-  titleRow.append(dot, titleWrap);
-
-  const menu = document.createElement("button");
-  menu.className = "menu-btn";
-  menu.textContent = "⋯";
-  menu.title = "Tracker options";
-  menu.addEventListener("click", () => trackerMenu(t.id));
-
-  top.append(titleRow, menu);
-  card.appendChild(top);
-
-  if (t.type === "checklist") {
-    card.appendChild(renderChecklist(t, entry));
-  } else {
-    const prog = document.createElement("div");
-    prog.className = "progress";
-    const bar = document.createElement("div");
-    bar.className = "progress-bar";
-    bar.style.width = `${pct}%`;
-    prog.appendChild(bar);
-    card.appendChild(prog);
-  }
-
-  const actions = document.createElement("div");
-  actions.className = "tracker-actions";
-
-  const label = document.createElement("span");
-  label.className = "meta";
-  label.textContent = displayValue(t, entry, pct);
-
-  const group = document.createElement("div");
-  group.className = "action-group";
-
-  if (t.type === "habit" || t.type === "deadline") {
-    const btn = document.createElement("button");
-    btn.className = `complete-btn ${entry.done ? "done" : ""}`;
-    btn.textContent = entry.done ? "Done ✓" : "Mark done";
-    btn.addEventListener("click", () => {
-      entry.done = !entry.done;
-      render();
-      toast(entry.done ? "Nice — marked done." : "Marked as incomplete.");
-    });
-    group.appendChild(btn);
-  }
-
-  if (t.type === "count") {
-    const minus = document.createElement("button");
-    minus.className = "small-btn";
-    minus.textContent = "−";
-    minus.addEventListener("click", () => {
-      entry.value = Math.max(0, Number(entry.value || 0) - 1);
-      render();
+    appData.topics.forEach(topic => {
+        topic.subtasks.forEach(sub => {
+            totalTasks++;
+            if (sub.completed) completedTasks++;
+        });
     });
 
-    const plus = document.createElement("button");
-    plus.className = "small-btn";
-    plus.textContent = "+";
-    plus.addEventListener("click", () => {
-      entry.value = Number(entry.value || 0) + 1;
-      render();
-    });
+    const percentage = totalTasks === 0 ? 0 : Math.round((completedTasks / totalTasks) * 100);
+    document.getElementById('progress-percentage').textContent = `${percentage}%`;
 
-    group.append(minus, plus);
-  }
-
-  actions.append(label, group);
-  card.appendChild(actions);
-  return card;
-}
-
-function renderChecklist(t, entry) {
-  const wrapper = document.createElement("div");
-  wrapper.className = "checklist";
-
-  (t.items || []).forEach((item, index) => {
-    const checked = !!entry.items?.[index];
-    const row = document.createElement("label");
-    row.className = `check-row ${checked ? "done" : ""}`;
-
-    const input = document.createElement("input");
-    input.type = "checkbox";
-    input.checked = checked;
-    input.addEventListener("change", () => {
-      if (!entry.items) entry.items = t.items.map(() => false);
-      entry.items[index] = input.checked;
-      render();
-    });
-
-    const span = document.createElement("span");
-    span.textContent = item;
-
-    row.append(input, span);
-    wrapper.appendChild(row);
-  });
-
-  return wrapper;
-}
-
-function displayValue(t, entry, pct) {
-  if (t.type === "habit") return `${pct}% complete today`;
-  if (t.type === "count") return `${entry.value || 0} / ${t.target}`;
-  if (t.type === "checklist") {
-    const done = (entry.items || []).filter(Boolean).length;
-    return `${done} / ${(t.items || []).length} checked`;
-  }
-  if (t.type === "deadline") {
-    if (entry.done) return "Completed";
-    return `${daysUntil(t.deadline)} days left`;
-  }
-  return `${pct}%`;
-}
-
-function daysUntil(dateStr) {
-  const target = new Date(`${dateStr}T00:00:00`);
-  const now = new Date();
-  const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-  return Math.ceil((target - today) / 86400000);
-}
-
-function formatShortDate(dateStr) {
-  const d = new Date(`${dateStr}T00:00:00`);
-  return new Intl.DateTimeFormat(undefined, { day: "numeric", month: "short" }).format(d);
-}
-
-function trackerMenu(id) {
-  const t = state.trackers.find(x => x.id === id);
-  if (!t) return;
-  const action = prompt(
-    `"${t.name}"\n\nType DELETE to delete, ARCHIVE to hide, or CANCEL.`,
-    "CANCEL"
-  );
-  if (!action) return;
-  const normalized = action.trim().toUpperCase();
-  if (normalized === "DELETE") {
-    state.trackers = state.trackers.filter(x => x.id !== id);
-    render();
-    toast("Tracker deleted.");
-  } else if (normalized === "ARCHIVE") {
-    t.archived = true;
-    render();
-    toast("Tracker archived.");
-  }
-}
-
-function openModal() {
-  ui.modalBackdrop.classList.remove("hidden");
-  ui.nameInput.focus();
-}
-function closeModal() {
-  ui.modalBackdrop.classList.add("hidden");
-  ui.trackerForm.reset();
-  ui.targetInput.value = "1";
-  ui.deadlineWrap.classList.add("hidden");
-  ui.targetWrap.classList.remove("hidden");
-}
-
-function syncTypeFields() {
-  const type = ui.typeInput.value;
-  ui.targetWrap.classList.toggle("hidden", type !== "count");
-  ui.deadlineWrap.classList.toggle("hidden", type !== "deadline");
-}
-
-function createTracker(event) {
-  event.preventDefault();
-  const type = ui.typeInput.value;
-  const tracker = {
-    id: crypto.randomUUID ? crypto.randomUUID() : String(Date.now()),
-    name: ui.nameInput.value.trim(),
-    type,
-    target: Number(ui.targetInput.value || 1),
-    deadline: ui.deadlineInput.value || null,
-    category: ui.categoryInput.value.trim(),
-    color: ui.colorInput.value,
-    createdAt: new Date().toISOString(),
-    archived: false,
-    history: {}
-  };
-
-  if (!tracker.name) return;
-  if (type === "checklist") {
-    const text = prompt("Enter checklist items separated by commas:", "Morning, Workout, Reading");
-    tracker.items = (text || "").split(",").map(s => s.trim()).filter(Boolean).slice(0, 20);
-    if (!tracker.items.length) {
-      tracker.items = ["First item", "Second item"];
+    const undoBtn = document.getElementById('undo-btn');
+    if (undoBtn) {
+        if (appData.history.length === 0) {
+            undoBtn.disabled = true;
+            undoBtn.style.opacity = '0.5';
+        } else {
+            undoBtn.disabled = false;
+            undoBtn.style.opacity = '1';
+        }
     }
-  }
-
-  state.trackers.unshift(tracker);
-  saveState();
-  closeModal();
-  render();
-  toast("Tracker created.");
 }
 
-function exportData() {
-  const blob = new Blob([JSON.stringify(state, null, 2)], {type: "application/json"});
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement("a");
-  a.href = url;
-  a.download = `my-tracker-backup-${dateKey()}.json`;
-  a.click();
-  URL.revokeObjectURL(url);
-  toast("Backup exported.");
+function renderTopics() {
+    const container = document.getElementById('tracker-container');
+    if (!container) return;
+    container.innerHTML = '';
+
+    appData.topics.forEach(topic => {
+        const totalSubs = topic.subtasks.length;
+        const incompleteSubs = topic.subtasks.filter(s => !s.completed);
+        const completedSubs = totalSubs - incompleteSubs.length;
+        const topicPercent = totalSubs === 0 ? 0 : Math.round((completedSubs / totalSubs) * 100);
+
+        const card = document.createElement('div');
+        const isExpanded = appData.expanded[topic.id] ? 'expanded' : '';
+        card.className = `topic-card ${isExpanded}`;
+
+        const header = document.createElement('div');
+        header.className = 'topic-header';
+        header.innerHTML = `
+            <div class="topic-info">
+                <span class="topic-title">${topic.title}</span>
+                <div class="topic-progress-bar">
+                    <div class="topic-progress-fill" style="width: ${topicPercent}%"></div>
+                </div>
+            </div>
+            <span style="color: var(--text-muted); font-size: 0.8rem;">${completedSubs}/${totalSubs} Tasks</span>
+        `;
+
+        header.addEventListener('click', () => {
+            appData.expanded[topic.id] = !appData.expanded[topic.id];
+            saveData();
+            renderTopics();
+        });
+
+        const subtasksDiv = document.createElement('div');
+        subtasksDiv.className = 'subtasks';
+
+        if (incompleteSubs.length === 0) {
+            subtasksDiv.innerHTML = `<div style="text-align: center; padding: 1rem; color: var(--success); font-weight: bold;">🎉 Topic Mastered! Great job.</div>`;
+        } else {
+            const nextTasks = incompleteSubs.slice(0, 3);
+
+            nextTasks.forEach(sub => {
+                const subItem = document.createElement('div');
+                subItem.className = 'subtask-item';
+
+                const linkHTML = sub.link
+                    ? `<a href="${sub.link}" target="_blank" class="subtask-link" onclick="event.stopPropagation()">🔗 Go to Lab</a>`
+                    : '';
+
+                subItem.innerHTML = `
+                    <div class="subtask-checkbox"></div>
+                    <div class="subtask-title">${sub.title}</div>
+                    ${linkHTML}
+                `;
+
+                subItem.addEventListener('click', (e) => {
+                    if (e.target.tagName === 'A') return;
+                    e.stopPropagation();
+                    sub.completed = true;
+                    appData.history.push({ topicId: topic.id, subtaskId: sub.id });
+                    saveData();
+                    renderTopics();
+                    renderStats();
+                });
+
+                subtasksDiv.appendChild(subItem);
+            });
+
+            if (incompleteSubs.length > 3) {
+                const moreText = document.createElement('div');
+                moreText.style.cssText = 'font-size: 0.8rem; color: var(--text-muted); margin-top: 10px; text-align: center;';
+                moreText.textContent = `+ ${incompleteSubs.length - 3} more tasks in queue...`;
+                subtasksDiv.appendChild(moreText);
+            }
+        }
+
+        card.appendChild(header);
+        card.appendChild(subtasksDiv);
+        container.appendChild(card);
+    });
 }
 
-async function importData(file) {
-  try {
-    const text = await file.text();
-    const parsed = JSON.parse(text);
-    if (!parsed || !Array.isArray(parsed.trackers)) throw new Error("Invalid backup");
-    state = parsed;
-    saveState();
-    render();
-    toast("Backup imported.");
-  } catch {
-    toast("That file is not a valid tracker backup.");
-  }
+// 4. Undo, Reset, and Backup Logic
+const undoBtn = document.getElementById('undo-btn');
+if (undoBtn) {
+    undoBtn.addEventListener('click', () => {
+        if (appData.history.length === 0) return;
+        const lastAction = appData.history.pop();
+        const topic = appData.topics.find(t => t.id === lastAction.topicId);
+        if (topic) {
+            const sub = topic.subtasks.find(s => s.id === lastAction.subtaskId);
+            if (sub) {
+                sub.completed = false;
+                appData.expanded[topic.id] = true;
+                saveData(); renderTopics(); renderStats();
+            }
+        }
+    });
 }
 
-function toast(message) {
-  ui.toast.textContent = message;
-  ui.toast.classList.remove("hidden");
-  clearTimeout(toast.timer);
-  toast.timer = setTimeout(() => ui.toast.classList.add("hidden"), 1800);
+const resetBtn = document.getElementById('reset-btn');
+if (resetBtn) {
+    resetBtn.addEventListener('click', () => {
+        if (confirm("Are you sure you want to reset ALL progress? This cannot be undone.")) {
+            localStorage.removeItem('winterArcLiveTracker');
+            appData = JSON.parse(JSON.stringify(defaultData));
+            saveData(); renderApp();
+            const notesBox = document.getElementById('daily-notes');
+            if (notesBox) notesBox.value = '';
+            const dateInput = document.getElementById('arc-end-date');
+            if (dateInput) dateInput.value = appData.arcEndDate;
+        }
+    });
 }
 
-$("addBtn").addEventListener("click", openModal);
-$("addTopBtn").addEventListener("click", openModal);
-$("emptyAddBtn").addEventListener("click", openModal);
-$("closeModalBtn").addEventListener("click", closeModal);
-$("cancelBtn").addEventListener("click", closeModal);
-ui.typeInput.addEventListener("change", syncTypeFields);
-ui.trackerForm.addEventListener("submit", createTracker);
-$("exportBtn").addEventListener("click", exportData);
-$("importInput").addEventListener("change", e => {
-  const file = e.target.files?.[0];
-  if (file) importData(file);
-  e.target.value = "";
+const exportBtn = document.getElementById('export-btn');
+if (exportBtn) {
+    exportBtn.addEventListener('click', () => {
+        const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(appData));
+        const downloadAnchorNode = document.createElement('a');
+        downloadAnchorNode.setAttribute("href", dataStr);
+        downloadAnchorNode.setAttribute("download", `winter_arc_backup_${new Date().toISOString().split('T')[0]}.json`);
+        document.body.appendChild(downloadAnchorNode);
+        downloadAnchorNode.click();
+        downloadAnchorNode.remove();
+    });
+}
+
+// 5. Reusable Log Session Function (Used by Quick Add and Pomodoro)
+function logSession(minutes) {
+    appData.totalMinutes += minutes;
+    const today = new Date().toISOString().split('T')[0];
+
+    if (appData.lastLogDate !== today) {
+        const yesterday = new Date();
+        yesterday.setDate(yesterday.getDate() - 1);
+        const yesterdayString = yesterday.toISOString().split('T')[0];
+
+        if (appData.lastLogDate === yesterdayString) {
+            appData.streak += 1;
+        } else {
+            appData.streak = 1;
+        }
+        appData.lastLogDate = today;
+    }
+    saveData();
+    renderStats();
+}
+
+// 6. Quick Add Button Logic
+document.querySelectorAll('.quick-add-btn').forEach(btn => {
+    btn.addEventListener('click', (e) => {
+        const minutes = parseInt(e.target.dataset.minutes);
+        logSession(minutes);
+
+        const originalText = e.target.textContent;
+        e.target.textContent = '✓ Logged';
+        e.target.style.background = 'var(--success)';
+        e.target.style.color = 'white';
+
+        setTimeout(() => {
+            e.target.textContent = originalText;
+            e.target.style.background = '';
+            e.target.style.color = '';
+        }, 1000);
+    });
 });
-ui.modalBackdrop.addEventListener("click", e => {
-  if (e.target === ui.modalBackdrop) closeModal();
-});
 
-window.addEventListener("beforeinstallprompt", e => {
-  e.preventDefault();
-  deferredInstallPrompt = e;
-  ui.installBtn.classList.remove("hidden");
-});
-ui.installBtn.addEventListener("click", async () => {
-  if (!deferredInstallPrompt) return;
-  deferredInstallPrompt.prompt();
-  await deferredInstallPrompt.userChoice;
-  deferredInstallPrompt = null;
-  ui.installBtn.classList.add("hidden");
-});
+// 7. Pomodoro Timer Logic
+let timerInterval = null;
+let timeLeft = 1500; // 25 minutes in seconds
+let isTimerRunning = false;
 
-if ("serviceWorker" in navigator) {
-  window.addEventListener("load", () => navigator.serviceWorker.register("sw.js").catch(() => {}));
+const timerDisplay = document.getElementById('timer-display');
+const timerStartBtn = document.getElementById('timer-start-btn');
+const timerResetBtn = document.getElementById('timer-reset-btn');
+
+function updateTimerDisplay() {
+    if (!timerDisplay) return;
+    const minutes = Math.floor(timeLeft / 60);
+    const seconds = timeLeft % 60;
+    timerDisplay.textContent = `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
 }
 
-render();
+if (timerStartBtn) {
+    timerStartBtn.addEventListener('click', () => {
+        if (isTimerRunning) {
+            clearInterval(timerInterval);
+            isTimerRunning = false;
+            timerStartBtn.textContent = '▶ Resume';
+            timerStartBtn.classList.remove('running');
+        } else {
+            isTimerRunning = true;
+            timerStartBtn.textContent = '⏸ Pause';
+            timerStartBtn.classList.add('running');
+
+            timerInterval = setInterval(() => {
+                timeLeft--;
+                updateTimerDisplay();
+
+                if (timeLeft <= 0) {
+                    clearInterval(timerInterval);
+                    isTimerRunning = false;
+                    timerStartBtn.textContent = '▶ Start';
+                    timerStartBtn.classList.remove('running');
+                    timeLeft = 1500; // Reset to 25 mins
+                    updateTimerDisplay();
+
+                    logSession(25);
+                    alert("🍅 Pomodoro Complete! 25 minutes added to your tracker.");
+                }
+            }, 1000);
+        }
+    });
+}
+
+if (timerResetBtn) {
+    timerResetBtn.addEventListener('click', () => {
+        clearInterval(timerInterval);
+        isTimerRunning = false;
+        timeLeft = 1500;
+        updateTimerDisplay();
+        if (timerStartBtn) {
+            timerStartBtn.textContent = '▶ Start';
+            timerStartBtn.classList.remove('running');
+        }
+    });
+}
+
+// 8. Initialize App
+function init() {
+    loadData();
+    renderApp();
+    updateTimerDisplay();
+
+    const notesBox = document.getElementById('daily-notes');
+    if (notesBox) {
+        if (appData.dailyNotes) notesBox.value = appData.dailyNotes;
+        notesBox.addEventListener('input', (e) => {
+            appData.dailyNotes = e.target.value;
+            saveData();
+        });
+    }
+
+    const dateInput = document.getElementById('arc-end-date');
+    if (dateInput) {
+        dateInput.value = appData.arcEndDate;
+        dateInput.addEventListener('change', (e) => {
+            appData.arcEndDate = e.target.value;
+            saveData();
+            renderStats();
+        });
+    }
+}
+
+document.addEventListener('DOMContentLoaded', init);
