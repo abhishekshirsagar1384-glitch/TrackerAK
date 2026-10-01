@@ -1,18 +1,15 @@
 {
-  "name": "My Tracker",
-  "short_name": "Tracker",
-  "description": "A simple personal tracker for habits and goals.",
-  "start_url": "./",
-  "display": "standalone",
-  "background_color": "#f4f5f8",
-  "theme_color": "#111827",
-  "orientation": "portrait-primary",
-  "icons": [
-    {
-      "src": "icon.svg",
-      "sizes": "any",
-      "type": "image/svg+xml",
-      "purpose": "any maskable"
-    }
-  ]
+    "name": "Winter Arc Comeback Tracker",
+    "short_name": "Winter Arc",
+    "start_url": "/",
+    "display": "standalone",
+    "background_color": "#0f172a",
+    "theme_color": "#0f172a",
+    "icons": [
+        {
+            "src": "icon.svg",
+            "sizes": "any",
+            "type": "image/svg+xml"
+        }
+    ]
 }
