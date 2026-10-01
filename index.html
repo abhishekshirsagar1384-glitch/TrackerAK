@@ -1,148 +1,79 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-  <meta name="theme-color" content="#111827">
-  <meta name="description" content="A simple personal tracker for habits, goals, counts, and checklists.">
-  <link rel="manifest" href="manifest.webmanifest">
-  <link rel="icon" href="icon.svg" type="image/svg+xml">
-  <link rel="stylesheet" href="styles.css">
-  <title>My Tracker</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Winter Arc Tracker</title>
+    <link rel="manifest" href="manifest.webmanifest">
+    <link rel="stylesheet" href="styles.css">
+    <meta name="theme-color" content="#0f172a">
 </head>
 <body>
-  <header class="topbar">
-    <div>
-      <div class="eyebrow">PERSONAL TRACKER</div>
-      <h1>My Tracker</h1>
+    <div class="app-container">
+        <header>
+            <h1>❄️ Winter Arc Comeback</h1>
+            <p class="subtitle">Daily Security & AI Tracker</p>
+        </header>
+
+        <!-- Winter Arc End Date Picker -->
+        <section class="date-picker-section">
+            <label for="arc-end-date">Set Your Winter Arc End Date:</label>
+            <input type="date" id="arc-end-date">
+        </section>
+
+        <!-- Daily Stats Dashboard -->
+        <section class="dashboard">
+            <div class="stat-box">
+                <span class="stat-label">Current Streak</span>
+                <span class="stat-value" id="streak-count">🔥 0 Days</span>
+            </div>
+            <div class="stat-box">
+                <span class="stat-label">Total Time</span>
+                <span class="stat-value" id="total-time">0 hrs</span>
+            </div>
+            <div class="stat-box">
+                <span class="stat-label">Overall Progress</span>
+                <span class="stat-value" id="progress-percentage">0%</span>
+            </div>
+            <div class="stat-box">
+                <span class="stat-label">Days Left</span>
+                <span class="stat-value" id="days-left">0 Days</span>
+            </div>
+        </section>
+
+        <!-- Pomodoro Timer -->
+        <section class="pomodoro-section">
+            <div class="timer-display" id="timer-display">25:00</div>
+            <div class="timer-controls">
+                <button id="timer-start-btn" class="timer-btn start">▶ Start</button>
+                <button id="timer-reset-btn" class="timer-btn reset">↺ Reset</button>
+            </div>
+        </section>
+
+        <!-- Action Buttons -->
+        <div class="action-buttons">
+            <button id="reset-btn" class="reset-btn">🔄 Reset All Progress</button>
+            <button id="undo-btn" class="undo-btn">↩ Undo Last Task</button>
+            <button id="export-btn" class="undo-btn" style="background: #0ea5e9; color: white; border-color: #0ea5e9;">💾 Backup Data</button>
+        </div>
+
+        <!-- Daily Check-in Form -->
+        <section class="daily-log">
+            <h3>Log Today's Session</h3>
+            <div class="quick-add-grid">
+                <button class="quick-add-btn" data-minutes="15">+15m</button>
+                <button class="quick-add-btn" data-minutes="30">+30m</button>
+                <button class="quick-add-btn" data-minutes="45">+45m</button>
+                <button class="quick-add-btn" data-minutes="60">+1h</button>
+            </div>
+            <textarea id="daily-notes" placeholder="Quick notes on what you learned today..."></textarea>
+        </section>
+
+        <main id="tracker-container" class="tracker-list">
+            <!-- Topics will be injected here by app.js -->
+        </main>
+
     </div>
-    <button id="installBtn" class="icon-btn hidden" aria-label="Install app">＋</button>
-  </header>
-
-  <main class="container">
-    <section class="hero-card">
-      <div>
-        <p class="muted">Today</p>
-        <h2 id="todayLabel">—</h2>
-        <p id="todayQuote" class="quote">Small progress still counts.</p>
-      </div>
-      <button id="addTopBtn" class="primary-btn">+ Add tracker</button>
-    </section>
-
-    <section class="stats-grid">
-      <div class="stat-card">
-        <span>Today</span>
-        <strong id="todayDone">0%</strong>
-      </div>
-      <div class="stat-card">
-        <span>Active</span>
-        <strong id="activeCount">0</strong>
-      </div>
-      <div class="stat-card">
-        <span>Best streak</span>
-        <strong id="bestStreak">0</strong>
-      </div>
-    </section>
-
-    <div class="section-head">
-      <div>
-        <div class="eyebrow">YOUR TRACKERS</div>
-        <h2>Keep moving</h2>
-      </div>
-      <button id="addBtn" class="secondary-btn">+ New</button>
-    </div>
-
-    <section id="trackerList" class="tracker-list"></section>
-
-    <section id="emptyState" class="empty-state">
-      <div class="empty-icon">✓</div>
-      <h3>Nothing tracked yet</h3>
-      <p>Create your first tracker. You can track a habit, a number, a checklist, or a goal with a deadline.</p>
-      <button id="emptyAddBtn" class="primary-btn">Create your first tracker</button>
-    </section>
-
-    <section class="data-tools">
-      <div>
-        <div class="eyebrow">YOUR DATA</div>
-        <h2>Backup & restore</h2>
-        <p class="muted small">Your data is stored on this device in this version.</p>
-      </div>
-      <div class="tool-row">
-        <button id="exportBtn" class="secondary-btn">Export JSON</button>
-        <label class="secondary-btn file-btn">
-          Import JSON
-          <input id="importInput" type="file" accept="application/json">
-        </label>
-      </div>
-    </section>
-  </main>
-
-  <div id="modalBackdrop" class="modal-backdrop hidden">
-    <section class="modal" role="dialog" aria-modal="true" aria-labelledby="modalTitle">
-      <div class="modal-head">
-        <div>
-          <div class="eyebrow">NEW TRACKER</div>
-          <h2 id="modalTitle">Create tracker</h2>
-        </div>
-        <button id="closeModalBtn" class="icon-btn" aria-label="Close">×</button>
-      </div>
-
-      <form id="trackerForm">
-        <label>
-          Name
-          <input id="nameInput" required maxlength="80" placeholder="e.g. Drink 3L water">
-        </label>
-
-        <label>
-          Type
-          <select id="typeInput">
-            <option value="habit">Daily habit</option>
-            <option value="count">Daily count</option>
-            <option value="checklist">Checklist</option>
-            <option value="deadline">Deadline / countdown</option>
-          </select>
-        </label>
-
-        <div id="targetWrap">
-          <label>
-            Daily target
-            <input id="targetInput" type="number" min="1" step="1" value="1">
-          </label>
-        </div>
-
-        <div id="deadlineWrap" class="hidden">
-          <label>
-            Deadline
-            <input id="deadlineInput" type="date">
-          </label>
-        </div>
-
-        <label>
-          Category
-          <input id="categoryInput" maxlength="30" placeholder="Health, Study, Finance...">
-        </label>
-
-        <label>
-          Color
-          <select id="colorInput">
-            <option value="violet">Violet</option>
-            <option value="blue">Blue</option>
-            <option value="green">Green</option>
-            <option value="orange">Orange</option>
-            <option value="pink">Pink</option>
-          </select>
-        </label>
-
-        <div class="modal-actions">
-          <button type="button" id="cancelBtn" class="secondary-btn">Cancel</button>
-          <button type="submit" class="primary-btn">Create</button>
-        </div>
-      </form>
-    </section>
-  </div>
-
-  <div id="toast" class="toast hidden"></div>
-
-  <script src="app.js"></script>
+    <script src="app.js"></script>
 </body>
 </html>
